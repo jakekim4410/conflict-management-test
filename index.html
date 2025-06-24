@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>토마스-킬만 갈등 관리 유형 진단</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+            box-sizing: border-box;
+            transition: all 0.3s ease-in-out;
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e0e7ff; /* Light blue for empty part */
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .progress-bar {
+            height: 12px;
+            background-color: #6366f1; /* Indigo for filled part */
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.3s ease-in-out;
+        }
+        .question-card {
+            background-color: #f9fafb; /* Lighter background for question */
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+        }
+        .option-button {
+            display: block;
+            width: 100%;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            background-color: #eff6ff; /* Very light blue */
+            border: 2px solid #a5b4fc; /* Light indigo border */
+            border-radius: 12px;
+            text-align: left;
+            font-size: 1rem;
+            color: #4338ca; /* Darker indigo text */
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .option-button:hover {
+            background-color: #e0e7ff; /* Lighter indigo on hover */
+            border-color: #818cf8; /* Slightly darker indigo on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+        .option-button.selected {
+            background-color: #6366f1; /* Indigo when selected */
+            color: #ffffff;
+            border-color: #4f46e5;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .nav-button {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-button.primary {
+            background-color: #4f46e5; /* Primary indigo */
+            color: white;
+        }
+        .nav-button.primary:hover {
+            background-color: #4338ca; /* Darker indigo on hover */
+            transform: translateY(-1px);
+        }
+        .nav-button.secondary {
+            background-color: #e0e7ff; /* Light indigo */
+            color: #4f46e5;
+            border: 2px solid #a5b4fc;
+        }
+        .nav-button.secondary:hover {
+            background-color: #c7d2fe; /* Lighter blue on hover */
+            transform: translateY(-1px);
+        }
+        .result-section h3 {
+            color: #4338ca; /* Dark indigo for headings */
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }
+        .result-item { /* New class for each result row */
+            margin-bottom: 16px;
+        }
+        .result-label-score { /* New class for label and score */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #312e81; /* Darkest indigo for labels */
+        }
+        .result-score-text {
+            font-size: 1rem;
+            color: #4f46e5; /* Indigo for score text */
+        }
+        .result-bar-container {
+            width: 100%;
+            background-color: #e0e7ff;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 24px;
+        }
+        .result-bar {
+            height: 100%;
+            background-color: #6366f1;
+            border-radius: 8px;
+            transition: width 0.5s ease-out;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        .modal-overlay.open .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .modal-content h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #312e81;
+            margin-bottom: 20px;
+        }
+        .modal-content p {
+            font-size: 1rem;
+            color: #4b5563;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .modal-button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .modal-button:hover {
+            background-color: #4338ca;
+        }
+        /* Mobile responsiveness */
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px;
+            }
+            .question-card {
+                padding: 16px;
+            }
+            .option-button {
+                padding: 14px 18px;
+                font-size: 0.95rem;
+            }
+            .nav-button {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+            .modal-content {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Introduction Section -->
+        <div id="intro-section" class="text-center p-6">
+            <h1 class="text-3xl font-bold text-indigo-800 mb-6">토마스-킬만 갈등 관리 유형 진단</h1>
+            <p class="text-gray-700 text-lg mb-8 leading-relaxed">
+                이 설문은 당신이 갈등 상황에서 주로 어떤 방식으로 행동하는지 파악하는 데 도움을 줍니다. 당신의 응답을 바탕으로 <strong>경쟁, 협력, 타협, 회피, 수용</strong>의 다섯 가지 유형 중 당신의 선호도를 분석합니다.
+            </p>
+            <p class="text-gray-600 text-base mb-8">
+                각 문항에 대해 당신의 평소 행동에 가장 가까운 보기를 선택해 주세요. 정답은 없으며, 솔직하게 응답하는 것이 중요합니다.
+            </p>
+            <button id="start-survey-button" class="nav-button primary">
+                설문 시작하기
+            </button>
+        </div>
+
+        <!-- Survey Section -->
+        <div id="survey-section" class="hidden">
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <p id="question-counter" class="text-sm text-gray-500 mb-4 text-right"></p>
+            <div id="question-container" class="question-card">
+                <p id="question-text" class="text-xl font-semibold text-gray-800 mb-6"></p>
+                <div id="options-container">
+                    <!-- Options will be loaded here by JavaScript -->
+                </div>
+            </div>
+            <div class="flex justify-between mt-6">
+                <button id="prev-button" class="nav-button secondary hidden">이전</button>
+                <button id="next-button" class="nav-button primary">다음</button>
+                <button id="submit-button" class="nav-button primary hidden">결과 보기</button>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="result-section" class="hidden text-center">
+            <h2 class="text-3xl font-bold text-indigo-800 mb-6">당신의 갈등 관리 유형 분석</h2>
+            <p class="text-gray-700 text-lg mb-8 leading-relaxed">
+                다음은 당신의 응답을 바탕으로 분석된 각 갈등 관리 유형별 점수입니다. 점수가 높을수록 해당 유형의 경향이 강함을 의미합니다.
+            </p>
+
+            <div id="result-display" class="mb-8">
+                <!-- Results will be displayed here -->
+            </div>
+
+            <div class="result-section mt-8 text-left">
+                <h3 class="text-2xl font-semibold text-indigo-700 mb-4">유형별 특징 및 활용</h3>
+                <div id="type-descriptions" class="space-y-6 text-gray-700">
+                    <!-- Descriptions will be loaded here -->
+                </div>
+            </div>
+
+            <button id="restart-button" class="nav-button primary mt-10">
+                다시 진단하기
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom Message Modal -->
+    <div id="message-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title"></h2>
+            <p id="modal-message"></p>
+            <button id="modal-close-button" class="modal-button">확인</button>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수 설정
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Firestore는 이 앱에서 사용되지 않으므로 __firebase_config 및 __initial_auth_token은 주석 처리합니다.
+        // const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // Firebase 관련 스크립트 (이 앱에서는 Firestore를 사용하지 않으므로 주석 처리)
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // DOM 요소 가져오기
+        const introSection = document.getElementById('intro-section');
+        const surveySection = document.getElementById('survey-section');
+        const resultSection = document.getElementById('result-section');
+        const startSurveyButton = document.getElementById('start-survey-button');
+        const questionCounter = document.getElementById('question-counter');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const submitButton = document.getElementById('submit-button');
+        const progressBar = document.getElementById('progress-bar');
+        const resultDisplay = document.getElementById('result-display');
+        const typeDescriptions = document.getElementById('type-descriptions');
+        const restartButton = document.getElementById('restart-button');
+
+        const messageModalOverlay = document.getElementById('message-modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseButton = document.getElementById('modal-close-button');
+
+        let currentQuestionIndex = 0;
+        let answers = []; // 사용자의 답변을 저장할 배열
+        let scores = {
+            competing: 0,
+            collaborating: 0,
+            compromising: 0,
+            avoiding: 0,
+            accommodating: 0
+        };
+
+        // 토마스-킬만 갈등 관리 유형 문항 (예시)
+        // 저작권 문제로 공식 문항을 사용할 수 없으므로, 개념을 바탕으로 자체 문항을 구성했습니다.
+        // 각 옵션은 특정 갈등 관리 유형(competing, collaborating, compromising, avoiding, accommodating)에 기여합니다.
+        const questions = [
+            {
+                id: 1,
+                question: "어떤 문제가 발생했을 때, 당신은 주로 어떻게 반응하나요?",
+                options: [
+                    { text: "내 입장을 강하게 주장하며 문제를 해결하려 합니다.", mode: "competing" },
+                    { text: "갈등을 피하고 나중에 다루려고 합니다.", mode: "avoiding" }
+                ]
+            },
+            {
+                id: 2,
+                question: "중요한 결정을 내려야 할 때, 당신은 어떻게 하나요?",
+                options: [
+                    { text: "모두의 의견을 듣고 최선의 합의점을 찾으려 합니다.", mode: "collaborating" },
+                    { text: "빠른 결정을 위해 내 주장을 내세웁니다.", mode: "competing" }
+                ]
+            },
+            {
+                id: 3,
+                question: "논쟁이 격해질 때, 당신은?",
+                options: [
+                    { text: "상대방의 감정을 상하게 하지 않으려 노력하며 양보합니다.", mode: "accommodating" },
+                    { text: "중간 지점을 찾아 서로 조금씩 양보하도록 합니다.", mode: "compromising" }
+                ]
+            },
+            {
+                id: 4,
+                question: "다른 사람과 의견 차이가 생겼을 때, 당신은?",
+                options: [
+                    { text: "갈등을 직면하지 않고 자연스럽게 해결되기를 기다립니다.", mode: "avoiding" },
+                    { text: "양측 모두에게 이득이 되는 새로운 해결책을 모색합니다.", mode: "collaborating" }
+                ]
+            },
+            {
+                id: 5,
+                question: "프로젝트 진행 중 갈등이 발생하면, 당신은 주로?",
+                options: [
+                    { text: "내 의견을 관철시키기 위해 설득과 압력을 가합니다.", mode: "competing" },
+                    { text: "논의를 잠시 중단하고 나중에 다시 이야기하자고 제안합니다.", mode: "avoiding" }
+                ]
+            },
+            {
+                id: 6,
+                question: "친한 친구와 다툼이 생겼을 때, 당신은?",
+                options: [
+                    { text: "친구의 기분을 상하지 않도록 내가 먼저 사과하고 양보합니다.", mode: "accommodating" },
+                    { text: "친구와 내가 모두 납득할 만한 해결책을 함께 찾습니다.", mode: "collaborating" }
+                ]
+            },
+            {
+                id: 7,
+                question: "자원이 한정된 상황에서 목표를 달성해야 한다면, 당신은?",
+                options: [
+                    { text: "자신의 몫을 최대한 확보하기 위해 노력합니다.", mode: "competing" },
+                    { text: "모두가 만족할 수 있도록 적절히 나누는 방법을 제안합니다.", mode: "compromising" }
+                ]
+            },
+            {
+                id: 8,
+                question: "팀 내에서 갈등이 있을 때, 당신은?",
+                options: [
+                    { text: "갈등 자체를 언급하지 않고 자연스럽게 넘어가려 합니다.", mode: "avoiding" },
+                    { text: "모두가 만족할 수 있는 해결책을 찾기 위해 적극적으로 논의를 이끕니다.", mode: "collaborating" }
+                ]
+            },
+            {
+                id: 9,
+                question: "당신이 틀렸다고 생각할 때, 당신은?",
+                options: [
+                    { text: "오류를 인정하고 상대방의 의견을 따릅니다.", mode: "accommodating" },
+                    { text: "내 실수를 최소화하면서도 상대방의 불만을 해소하려 합니다.", mode: "compromising" }
+                ]
+            },
+            {
+                id: 10,
+                question: "시간이 매우 부족한 긴급 상황에서, 당신은?",
+                options: [
+                    { text: "신속한 결정을 위해 내 뜻대로 밀어붙입니다.", mode: "competing" },
+                    { text: "갈등 해결보다 당장 해야 할 일에 집중합니다.", mode: "avoiding" }
+                ]
+            },
+            {
+                id: 11,
+                question: "서로 다른 부서 간의 협업 문제가 발생했을 때, 당신은?",
+                options: [
+                    { text: "각 부서의 이익을 최대한 반영하여 통합적인 해결책을 찾습니다.", mode: "collaborating" },
+                    { text: "부서 간의 마찰을 피하기 위해 내가 먼저 양보합니다.", mode: "accommodating" }
+                ]
+            },
+            {
+                id: 12,
+                question: "갈등의 원인이 명확하지 않을 때, 당신은?",
+                options: [
+                    { text: "갈등의 본질을 파악하기 위해 더 많은 정보를 수집합니다.", mode: "collaborating" },
+                    { text: "문제를 잠시 보류하고 상황을 관망합니다.", mode: "avoiding" }
+                ]
+            },
+            {
+                id: 13,
+                question: "개인적인 이익과 집단의 이익이 충돌할 때, 당신은?",
+                options: [
+                    { text: "내 개인적인 이익을 우선시하여 주장합니다.", mode: "competing" },
+                    { text: "집단의 이익을 위해 개인적인 이익을 기꺼이 포기합니다.", mode: "accommodating" }
+                ]
+            },
+            {
+                id: 14,
+                question: "합의에 도달하기 어려운 상황에서, 당신은?",
+                options: [
+                    { text: "양쪽 모두에게 부분적으로 만족스러운 타협안을 찾습니다.", mode: "compromising" },
+                    { text: "상대방이 전적으로 옳다고 생각한다면 그의 의견을 따릅니다.", mode: "accommodating" }
+                ]
+            },
+            {
+                id: 15,
+                question: "불필요한 논쟁이라고 생각될 때, 당신은?",
+                options: [
+                    { text: "논쟁을 중단하고 다른 주제로 전환합니다.", mode: "avoiding" },
+                    { text: "상대방에게 내가 옳다는 것을 입증하려 노력합니다.", mode: "competing" }
+                ]
+            },
+            {
+                id: 16,
+                question: "동료와의 의견 충돌 시, 당신은?",
+                options: [
+                    { text: "동료의 의견에 귀 기울이고 함께 해결책을 모색합니다.", mode: "collaborating" },
+                    { text: "나의 주장을 굽히지 않습니다.", mode: "competing" }
+                ]
+            },
+            {
+                id: 17,
+                question: "갈등이 매우 중요하다고 느껴질 때, 당신은?",
+                options: [
+                    { text: "이 문제를 해결하기 위해 어떤 노력도 마다하지 않습니다.", mode: "collaborating" },
+                    { text: "중요성에도 불구하고 일단 피하고 봅니다.", mode: "avoiding" }
+                ]
+            },
+            {
+                id: 18,
+                question: "상대방이 감정적으로 나올 때, 당신은?",
+                options: [
+                    { text: "상대방의 감정을 이해하려 노력하며 진정시킵니다.", mode: "accommodating" },
+                    { text: "감정적인 반응에 흔들리지 않고 논리적으로 대응합니다.", mode: "competing" }
+                ]
+            },
+            {
+                id: 19,
+                question: "새로운 아이디어를 제안했는데 반대에 부딪혔을 때, 당신은?",
+                options: [
+                    { text: "내 아이디어를 고수하며 설득합니다.", mode: "competing" },
+                    { text: "반대 의견을 수렴하여 아이디어를 수정하거나 철회합니다.", mode: "accommodating" }
+                ]
+            },
+            {
+                id: 20,
+                question: "서로 상반되는 두 가지 목표 사이에서, 당신은?",
+                options: [
+                    { text: "두 목표를 모두 만족시키는 창의적인 방법을 찾습니다.", mode: "collaborating" },
+                    { text: "두 목표를 모두 완전히 달성하기보다 적절히 조율합니다.", mode: "compromising" }
+                ]
+            },
+            {
+                id: 21,
+                question: "갈등 해결에 너무 많은 에너지가 소모될 것 같을 때, 당신은?",
+                options: [
+                    { text: "에너지 소모를 감수하고라도 문제를 해결하려 합니다.", mode: "collaborating" },
+                    { text: "에너지 소모를 피하기 위해 갈등을 회피합니다.", mode: "avoiding" }
+                ]
+            },
+            {
+                id: 22,
+                question: "당신이 옳다고 확신하는 상황에서, 다른 의견이 있다면?",
+                options: [
+                    { text: "내 확신을 바탕으로 강하게 밀어붙입니다.", mode: "competing" },
+                    { text: "상대방의 입장을 이해하려 노력하고 절충점을 찾습니다.", mode: "compromising" }
+                ]
+            },
+            {
+                id: 23,
+                question: "관계 유지가 매우 중요하다고 생각될 때, 당신은?",
+                options: [
+                    { text: "관계를 위해 내 의견을 기꺼이 양보합니다.", mode: "accommodating" },
+                    { text: "관계도 중요하지만, 문제 해결도 중요하므로 함께 논의합니다.", mode: "collaborating" }
+                ]
+            },
+            {
+                id: 24,
+                question: "논쟁이 해결될 가능성이 낮다고 판단될 때, 당신은?",
+                options: [
+                    { text: "논쟁을 중단하고 다른 방법을 모색합니다.", mode: "avoiding" },
+                    { text: "끝까지 내 주장을 펼칩니다.", mode: "competing" }
+                ]
+            },
+            {
+                id: 25,
+                question: "자신이 리더인 상황에서 갈등이 발생하면, 당신은?",
+                options: [
+                    { text: "리더십을 발휘하여 결정을 내리고 따르도록 합니다.", mode: "competing" },
+                    { text: "팀원들의 의견을 수렴하고 합의를 이끌어냅니다.", mode: "collaborating" }
+                ]
+            },
+            {
+                id: 26,
+                question: "갈등으로 인해 스트레스가 심할 때, 당신은?",
+                options: [
+                    { text: "스트레스를 피하기 위해 갈등 상황을 회피하려 합니다.", mode: "avoiding" },
+                    { text: "스트레스를 관리하며 문제 해결에 집중하려 합니다.", mode: "collaborating" }
+                ]
+            },
+            {
+                id: 27,
+                question: "상대방의 요구가 불합리하다고 느껴질 때, 당신은?",
+                options: [
+                    { text: "내 기준에서 불합리한 요구는 단호히 거절합니다.", mode: "competing" },
+                    { text: "일단 수용하고 나중에 대안을 찾아보려 합니다.", mode: "accommodating" }
+                ]
+            },
+            {
+                id: 28,
+                question: "서로에게 윈-윈(Win-Win)이 어려운 상황에서, 당신은?",
+                options: [
+                    { text: "각자 조금씩 양보하여 모두가 손해를 덜 보는 방법을 찾습니다.", mode: "compromising" },
+                    { text: "누군가는 희생해야 한다면 내가 희생할 수도 있다고 생각합니다.", mode: "accommodating" }
+                ]
+            },
+            {
+                id: 29,
+                question: "갈등 상황에서 새로운 정보가 필요할 때, 당신은?",
+                options: [
+                    { text: "새로운 정보를 얻기 위해 질문하고 조사합니다.", mode: "collaborating" },
+                    { text: "정보가 부족하다면 판단을 유보하고 기다립니다.", mode: "avoiding" }
+                ]
+            },
+            {
+                id: 30,
+                question: "당신이 중요하게 여기는 가치와 타인의 가치가 충돌할 때, 당신은?",
+                options: [
+                    { text: "내 가치를 지키기 위해 타협하지 않습니다.", mode: "competing" },
+                    { text: "서로의 가치를 존중하며 공존할 방법을 찾습니다.", mode: "collaborating" }
+                ]
+            }
+        ];
+
+        // 각 유형에 대한 설명
+        const typeDescriptionsData = {
+            competing: {
+                name: "경쟁형 (Competing)",
+                description: "경쟁형은 자신의 목표를 달성하기 위해 타인의 희생을 감수하는 스타일입니다. 높은 독단성과 낮은 협조성을 특징으로 하며, 자신의 주장을 강력하게 내세워 관철시키는 데 집중합니다. '이기고 지는' 결과에 초점을 맞춥니다.",
+                strengths: "신속하고 단호한 결정이 필요할 때, 중요한 원칙을 지켜야 할 때, 자신의 권리를 방어해야 할 때 효과적입니다. 위기 상황이나 비상시에 리더십을 발휘할 수 있습니다.",
+                weaknesses: "관계가 손상될 수 있고, 상대방의 불만을 야기할 수 있습니다. 장기적인 협력 관계 구축에는 어려움이 있을 수 있습니다. 지나치게 사용하면 독단적이라는 인상을 줄 수 있습니다."
+            },
+            collaborating: {
+                name: "협력형 (Collaborating)",
+                description: "협력형은 양측의 관심사를 모두 만족시키는 최적의 해결책을 찾기 위해 노력하는 스타일입니다. 높은 독단성과 높은 협조성을 특징으로 하며, 문제의 근본 원인을 파악하고 창의적인 '윈-윈' 솔루션을 모색합니다.",
+                strengths: "모두에게 만족스러운 결과를 가져와 장기적인 관계를 강화합니다. 창의적인 해결책을 도출하고, 팀워크와 합의를 통해 강력한 실행력을 확보할 수 있습니다. 문제 해결을 통해 성장하는 기회를 만듭니다.",
+                weaknesses: "시간과 노력이 많이 소요될 수 있습니다. 모든 상황에서 적용하기 어렵고, 사소한 문제에까지 너무 많은 자원을 투입할 위험이 있습니다."
+            },
+            compromising: {
+                name: "타협형 (Compromising)",
+                description: "타협형은 양측이 조금씩 양보하여 절충안을 찾는 스타일입니다. 중간 수준의 독단성과 협조성을 특징으로 하며, '절반의 만족'을 통해 빠르고 실용적인 해결을 추구합니다.",
+                strengths: "갈등을 비교적 신속하게 해결하고, 양측이 어느 정도 만족하는 결과를 도출할 수 있습니다. 복잡한 문제를 단순화하고, 시간 제약이 있을 때 유용합니다.",
+                weaknesses: "최적의 해결책이 아닐 수 있으며, 어느 쪽도 완전히 만족하지 못해 장기적인 불만을 남길 수 있습니다. 창의적인 대안 탐색을 저해할 수 있습니다."
+            },
+            avoiding: {
+                name: "회피형 (Avoiding)",
+                description: "회피형은 갈등을 피하고 문제를 무시하거나 해결을 연기하는 스타일입니다. 낮은 독단성과 낮은 협조성을 특징으로 하며, 갈등 상황에서 직접적인 대립을 피하고 싶어 합니다.",
+                strengths: "갈등이 사소하거나 중요하지 않을 때, 갈등을 해결할 시간이나 에너지가 부족할 때, 더 중요한 문제가 있을 때 유용합니다. 감정적인 상황에서 잠시 냉각기를 가질 수 있게 합니다.",
+                weaknesses: "중요한 문제가 해결되지 않고 방치되어 더 큰 문제로 발전할 수 있습니다. 상대방에게 무관심하다는 인상을 줄 수 있고, 문제가 커지면 나중에 해결하기 더 어려워질 수 있습니다."
+            },
+            accommodating: {
+                name: "수용형 (Accommodating)",
+                description: "수용형은 자신의 욕구를 희생하면서 상대방의 주장을 수용하여 갈등을 해결하는 스타일입니다. 낮은 독단성과 높은 협조성을 특징으로 하며, 관계 유지를 최우선으로 생각하며 양보합니다.",
+                strengths: "관계를 유지하고 조화를 이루는 데 매우 효과적입니다. 자신이 잘못했음을 인정하거나, 상대방에게 중요한 이슈일 때, 나중에 더 중요한 것을 얻기 위해 양보할 때 유용합니다. 융통성이 있고 협력적이라는 인상을 줍니다.",
+                weaknesses: "자신의 권리나 이익이 무시될 수 있고, 장기적으로 불만을 쌓을 수 있습니다. 이용당할 수 있다는 느낌을 받거나, 상대방에게 부정적인 선례를 남길 수 있습니다."
+            }
+        };
+
+
+        // 초기화 함수
+        function initializeSurvey() {
+            currentQuestionIndex = 0;
+            answers = new Array(questions.length).fill(null); // 모든 답변을 null로 초기화
+            scores = {
+                competing: 0,
+                collaborating: 0,
+                compromising: 0,
+                avoiding: 0,
+                accommodating: 0
+            };
+            introSection.classList.remove('hidden'); // 초기에는 소개 섹션을 보여줍니다.
+            surveySection.classList.add('hidden'); // 설문 섹션은 숨깁니다.
+            resultSection.classList.add('hidden'); // 결과 섹션은 숨깁니다.
+
+            // 첫 질문을 로드 (아직 화면에 보이지는 않지만 미리 준비)
+            displayQuestion();
+            updateProgressBar();
+            updateNavigationButtons();
+            updateQuestionCounter();
+        }
+
+        // 질문을 화면에 표시하는 함수
+        function displayQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const question = questions[currentQuestionIndex];
+                questionText.textContent = `${currentQuestionIndex + 1}. ${question.question}`;
+                optionsContainer.innerHTML = ''; // 기존 옵션 지우기
+
+                question.options.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.textContent = option.text;
+                    button.classList.add('option-button');
+                    // 이전에 선택했던 옵션이 있다면 'selected' 클래스 추가
+                    if (answers[currentQuestionIndex] === index) {
+                        button.classList.add('selected');
+                    }
+                    button.onclick = () => selectOption(index, option.mode);
+                    optionsContainer.appendChild(button);
+                });
+                updateNavigationButtons();
+                updateProgressBar();
+                updateQuestionCounter();
+            }
+        }
+
+        // 옵션 선택 함수
+        function selectOption(optionIndex, mode) {
+            // 현재 질문의 이전에 선택된 옵션의 점수를 되돌리기 (새로운 선택을 위해)
+            if (answers[currentQuestionIndex] !== null) {
+                const previousOptionMode = questions[currentQuestionIndex].options[answers[currentQuestionIndex]].mode;
+                scores[previousOptionMode]--;
+            }
+
+            // 새로운 옵션 선택 및 점수 업데이트
+            answers[currentQuestionIndex] = optionIndex;
+            scores[mode]++;
+
+            // UI 업데이트: 선택된 버튼 강조
+            document.querySelectorAll('.option-button').forEach((button, index) => {
+                if (index === optionIndex) {
+                    button.classList.add('selected');
+                } else {
+                    button.classList.remove('selected');
+                }
+            });
+
+            // 다음 문항으로 자동 이동 (선택 후) - UX 개선
+            setTimeout(() => {
+                if (currentQuestionIndex < questions.length - 1) {
+                    currentQuestionIndex++;
+                    displayQuestion();
+                } else if (currentQuestionIndex === questions.length - 1 && answers[currentQuestionIndex] !== null) {
+                    // 마지막 질문에서 선택 시, 자동으로 결과보기 버튼 활성화
+                    nextButton.classList.add('hidden');
+                    submitButton.classList.remove('hidden');
+                }
+            }, 300); // 0.3초 후 다음 질문으로
+        }
+
+        // 진행 바 업데이트
+        function updateProgressBar() {
+            const progress = (currentQuestionIndex / questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // 질문 카운터 업데이트
+        function updateQuestionCounter() {
+            questionCounter.textContent = `${currentQuestionIndex + 1} / ${questions.length}`;
+        }
+
+        // 내비게이션 버튼 가시성 업데이트
+        function updateNavigationButtons() {
+            prevButton.classList.toggle('hidden', currentQuestionIndex === 0);
+            nextButton.classList.toggle('hidden', currentQuestionIndex === questions.length - 1);
+            // 마지막 질문에 답변이 완료되었을 때만 '결과 보기' 버튼이 나타나도록 합니다.
+            submitButton.classList.toggle('hidden', !(currentQuestionIndex === questions.length - 1 && answers[currentQuestionIndex] !== null));
+        }
+
+        // 결과 계산 및 표시 함수
+        function showResults() {
+            surveySection.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+            resultDisplay.innerHTML = '';
+            typeDescriptions.innerHTML = '';
+
+            // 점수 정규화 (최대 점수를 100%로 가정)
+            // 각 질문이 두 가지 모드 중 하나에만 점수를 부여하므로,
+            // 한 유형이 받을 수 있는 최대 점수는 총 질문 수(questions.length)와 동일합니다.
+            const maxScorePerType = questions.length; 
+
+            for (const mode in scores) {
+                const score = scores[mode];
+                const percentage = (score / maxScorePerType) * 100; // 최대 점수 대비 백분율
+                const modeName = typeDescriptionsData[mode].name;
+
+                const resultItem = document.createElement('div');
+                resultItem.classList.add('result-item'); // Add new class for each result row
+                resultItem.innerHTML = `
+                    <div class="result-label-score">
+                        <span>${modeName}</span>
+                        <span class="result-score-text">${score}점 (${Math.round(percentage)}%)</span>
+                    </div>
+                    <div class="result-bar-container">
+                        <div class="result-bar" style="width: ${percentage}%;"></div>
+                    </div>
+                `;
+                resultDisplay.appendChild(resultItem);
+            }
+
+            // 유형별 설명 표시
+            for (const mode in typeDescriptionsData) {
+                const data = typeDescriptionsData[mode];
+                const descriptionHtml = `
+                    <div>
+                        <h4 class="text-xl font-semibold text-indigo-600 mb-2">${data.name}</h4>
+                        <p class="mb-2">${data.description}</p>
+                        <p class="font-medium text-gray-800">장점:</p>
+                        <p class="mb-2">${data.strengths}</p>
+                        <p class="font-medium text-gray-800">단점:</p>
+                        <p>${data.weaknesses}</p>
+                    </div>
+                `;
+                typeDescriptions.innerHTML += descriptionHtml;
+            }
+        }
+
+        // 모달 표시 함수
+        function showModal(title, message, callback = null) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            messageModalOverlay.classList.add('open');
+            modalCloseButton.onclick = () => {
+                messageModalOverlay.classList.remove('open');
+                if (callback) callback();
+            };
+        }
+
+        // 이벤트 리스너
+        startSurveyButton.addEventListener('click', () => {
+            introSection.classList.add('hidden');
+            surveySection.classList.remove('hidden');
+            displayQuestion(); // 설문 화면을 표시한 후 첫 질문을 다시 렌더링하여 UI 상태를 동기화합니다.
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (answers[currentQuestionIndex] === null) {
+                showModal("선택 필요", "다음으로 진행하려면 보기를 선택해 주세요.");
+                return;
+            }
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+            }
+        });
+
+        prevButton.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion();
+            }
+        });
+
+        submitButton.addEventListener('click', () => {
+            if (answers[currentQuestionIndex] === null) {
+                 showModal("선택 필요", "결과를 보려면 마지막 질문의 보기를 선택해 주세요.");
+                 return;
+            }
+            showResults();
+        });
+
+        restartButton.addEventListener('click', () => {
+            initializeSurvey();
+        });
+
+        // 페이지 로드 시 초기화
+        window.onload = initializeSurvey;
+
+    </script>
+</body>
+</html>
